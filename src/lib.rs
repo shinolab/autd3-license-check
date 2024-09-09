@@ -27,8 +27,8 @@ where
     cmd.manifest_path(&path);
 
     let get_opts = GetDependenciesOpt {
-        avoid_dev_deps: false,
-        avoid_build_deps: false,
+        avoid_dev_deps: true,
+        avoid_build_deps: true,
         direct_deps_only: false,
         root_only: false,
     };
