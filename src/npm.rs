@@ -12,7 +12,6 @@ struct PackageJson {
     pub version: String,
     pub repository: serde_json::Value,
     pub license: String,
-    pub author: String,
 }
 
 #[derive(Debug)]
@@ -21,7 +20,6 @@ pub struct NodeDependencyDetails {
     pub version: String,
     pub repository: String,
     pub license: String,
-    pub author: String,
 }
 
 pub fn glob_node_modules<P>(node_modules_path: P) -> anyhow::Result<Vec<NodeDependencyDetails>>
@@ -55,7 +53,6 @@ where
                     _ => return Err(anyhow::anyhow!("invalid repository type")),
                 },
                 license: package.license,
-                author: package.author,
             });
         }
     }

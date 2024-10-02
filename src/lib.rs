@@ -81,20 +81,24 @@ where
 
         writeln!(
             writer,
-            "{} {}{}",
+            "{} {} ({})",
             dependency.name,
             dependency.version,
-            dependency
-                .license
-                .map(|license| format!(" ({})", license))
-                .unwrap_or_default()
+            dependency.license.unwrap_or_else(|| {
+                license_file_map
+                    .iter()
+                    .find(|p| p.name == dependency.name)
+                    .map(|p| p.license.clone().unwrap_or_default())
+                    .unwrap_or_default()
+                    .to_owned()
+            })
         )?;
         if let Some(rep) = dependency.repository {
             writeln!(writer, "{}", rep)?;
         }
 
         if dependency.license_file.is_some() {
-            let license_file_content = license_file_map
+            if let Some(license_file_content) = license_file_map
                 .iter()
                 .find(|p| p.name == dependency.name)
                 .ok_or(anyhow::anyhow!(
@@ -102,13 +106,13 @@ where
                     dependency.name
                 ))?
                 .license_file_content
-                .to_owned();
-
-            writeln!(writer)?;
-            writeln!(writer, "---")?;
-            writeln!(writer)?;
-
-            writeln!(writer, "{}", license_file_content)?;
+                .to_owned()
+            {
+                writeln!(writer)?;
+                writeln!(writer, "---")?;
+                writeln!(writer)?;
+                writeln!(writer, "{}", license_file_content)?;
+            }
         }
     }
 
