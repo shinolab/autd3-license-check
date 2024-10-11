@@ -1,10 +1,21 @@
 use std::{
+    collections::HashMap,
     fs,
     io::{BufReader, Read},
     path::Path,
 };
 
 use serde::Deserialize;
+
+#[derive(Deserialize, Debug)]
+struct PackageLockModuleJson {
+    pub dev: Option<bool>,
+}
+
+#[derive(Deserialize, Debug)]
+struct PackageLockJson {
+    pub packages: HashMap<String, PackageLockModuleJson>,
+}
 
 #[derive(Deserialize, Debug)]
 struct PackageJson {
@@ -22,10 +33,35 @@ pub struct NodeDependencyDetails {
     pub license: String,
 }
 
-pub fn glob_node_modules<P>(node_modules_path: P) -> anyhow::Result<Vec<NodeDependencyDetails>>
+pub fn glob_node_modules<P1, P2>(
+    node_modules_path: P1,
+    package_lock_json_path: P2,
+) -> anyhow::Result<Vec<NodeDependencyDetails>>
 where
-    P: AsRef<Path>,
+    P1: AsRef<Path>,
+    P2: AsRef<Path>,
 {
+    let mut package_lock_json = String::new();
+    fs::File::open(package_lock_json_path)
+        .map(BufReader::new)?
+        .read_to_string(&mut package_lock_json)?;
+    let dev_packages =
+        if let Ok(package_lock) = serde_json::from_str::<PackageLockJson>(&package_lock_json) {
+            package_lock
+                .packages
+                .into_iter()
+                .filter_map(|(name, module)| {
+                    if module.dev.unwrap_or(false) {
+                        Some(name.replace("node_modules/", ""))
+                    } else {
+                        None
+                    }
+                })
+                .collect::<Vec<_>>()
+        } else {
+            Vec::new()
+        };
+
     let mut details = Vec::new();
     for entry in glob::glob(&format!(
         "{}/{}",
@@ -38,6 +74,9 @@ where
             .map(BufReader::new)?
             .read_to_string(&mut file_content)?;
         if let Ok(package) = serde_json::from_str::<PackageJson>(&file_content) {
+            if dev_packages.contains(&package.name) {
+                continue;
+            }
             details.push(NodeDependencyDetails {
                 name: package.name,
                 version: package.version,

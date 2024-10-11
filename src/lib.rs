@@ -183,13 +183,19 @@ where
     Ok(changed)
 }
 
-pub fn check_npm<P>(path: P, filename: &str) -> anyhow::Result<bool>
+pub fn check_npm<P1, P2>(
+    path: P1,
+    package_lock_json_path: P2,
+    filename: &str,
+) -> anyhow::Result<bool>
 where
-    P: Into<PathBuf>,
+    P1: Into<PathBuf>,
+    P2: Into<PathBuf>,
 {
     let path: PathBuf = path.into();
+    let package_lock_json_path: PathBuf = package_lock_json_path.into();
 
-    let dependencies = npm::glob_node_modules(&path)?;
+    let dependencies = npm::glob_node_modules(&path, &package_lock_json_path)?;
 
     let mut licenses = std::collections::HashSet::new();
     for dependency in &dependencies {
