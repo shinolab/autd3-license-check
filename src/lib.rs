@@ -79,19 +79,24 @@ where
         )?;
         writeln!(writer)?;
 
+        let license = dependency.license.unwrap_or_else(|| {
+            license_file_map
+                .iter()
+                .find(|p| p.name == dependency.name)
+                .map(|p| p.license.clone().unwrap_or_default())
+                .unwrap_or_default()
+                .to_owned()
+        });
         writeln!(
             writer,
-            "{} {} ({})",
+            "{} {}{}",
             dependency.name,
             dependency.version,
-            dependency.license.unwrap_or_else(|| {
-                license_file_map
-                    .iter()
-                    .find(|p| p.name == dependency.name)
-                    .map(|p| p.license.clone().unwrap_or_default())
-                    .unwrap_or_default()
-                    .to_owned()
-            })
+            if license.is_empty() {
+                "".to_string()
+            } else {
+                format!(" ({})", license)
+            }
         )?;
         if let Some(rep) = dependency.repository {
             writeln!(writer, "{}", rep)?;
@@ -100,6 +105,9 @@ where
         if dependency.license_file.is_some() {
             if let Some(license_file_content) = license_file_map
                 .iter()
+                .inspect(|p| {
+                    dbg!(&p.name);
+                })
                 .find(|p| p.name == dependency.name)
                 .ok_or(anyhow::anyhow!(
                     "license file not found for {}",
