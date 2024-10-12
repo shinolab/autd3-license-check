@@ -105,9 +105,6 @@ where
         if dependency.license_file.is_some() {
             if let Some(license_file_content) = license_file_map
                 .iter()
-                .inspect(|p| {
-                    dbg!(&p.name);
-                })
                 .find(|p| p.name == dependency.name)
                 .ok_or(anyhow::anyhow!(
                     "license file not found for {}",
